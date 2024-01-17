@@ -8,8 +8,12 @@ from dt_apriltags import Detector
 from picamera2 import Picamera2
 import json
 
+width = 640
+height = 480
+
 # Opening JSON file
-f = open('data.json')
+fname = "cam_cal_"+str(width)+"_"+str(height)+".json"
+f = open(fname)
 
 # returns JSON object as
 # a dictionary
@@ -32,7 +36,7 @@ f.close()
 cv2.startWindowThread()
 
 picam2 = Picamera2()
-picam2.configure(picam2.create_preview_configuration(main={"format": 'XRGB8888', "size": (640, 480)}))
+picam2.configure(picam2.create_preview_configuration(main={"format": 'XRGB8888', "size": (width, height)}))
 picam2.start()
 
 # Give the camera a good long time to set gains and

@@ -10,8 +10,8 @@ from picamera2 import Picamera2
 face_detector = cv2.CascadeClassifier("/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml")
 cv2.startWindowThread()
 
-width = 640
-height = 480
+width = 1920
+height = 1080
 
 picam2 = Picamera2()
 picam2.configure(picam2.create_preview_configuration(main={"format": 'XRGB8888', "size": (width, height)}))
@@ -25,15 +25,61 @@ sleep(5)
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-objp = np.zeros((4*11,3), np.float32)
-objp[:,:2] = np.mgrid[0:4,0:11].T.reshape(-1,2)
+objp = np.zeros((44, 3), np.float32)
+spacing = 0.787402 # inches (2cm)
+objp[0]  = (spacing*0   , spacing*0  , 0)
+objp[1]  = (spacing*0   , spacing*1 , 0)
+objp[2]  = (spacing*0   , spacing*2, 0)
+objp[3]  = (spacing*0   , spacing*3, 0)
+objp[4]  = (spacing*0.5 , spacing*0.5 , 0)
+objp[5]  = (spacing*0.5 , spacing*1.5, 0)
+objp[6]  = (spacing*0.5 , spacing*2.5, 0)
+objp[7]  = (spacing*0.5 , spacing*3.5, 0)
+objp[8]  = (spacing*1   , spacing*0  , 0)
+objp[9]  = (spacing*1   , spacing*1 , 0)
+objp[10] = (spacing*1   , spacing*2, 0)
+objp[11] = (spacing*1   , spacing*3, 0)
+objp[12] = (spacing*1.5 , spacing*0.5,  0)
+objp[13] = (spacing*1.5 , spacing*1.5, 0)
+objp[14] = (spacing*1.5 , spacing*2.5, 0)
+objp[15] = (spacing*1.5 , spacing*3.5, 0)
+objp[16] = (spacing*2   , spacing*0  , 0)
+objp[17] = (spacing*2   , spacing*1 , 0)
+objp[18] = (spacing*2   , spacing*2, 0)
+objp[19] = (spacing*2   , spacing*3, 0)
+objp[20] = (spacing*2.5 , spacing*0.5 , 0)
+objp[21] = (spacing*2.5 , spacing*1.5, 0)
+objp[22] = (spacing*2.5 , spacing*2.5, 0)
+objp[23] = (spacing*2.5 , spacing*3.5, 0)
+objp[24] = (spacing*3, spacing*0  , 0)
+objp[25] = (spacing*3, spacing*1 , 0)
+objp[26] = (spacing*3, spacing*2, 0)
+objp[27] = (spacing*3, spacing*3, 0)
+objp[28] = (spacing*3.5, spacing*0.5 , 0)
+objp[29] = (spacing*3.5, spacing*1.5, 0)
+objp[30] = (spacing*3.5, spacing*2.5, 0)
+objp[31] = (spacing*3.5, spacing*3.5, 0)
+objp[32] = (spacing*4, spacing*0  , 0)
+objp[33] = (spacing*4, spacing*1 , 0)
+objp[34] = (spacing*4, spacing*2, 0)
+objp[35] = (spacing*4, spacing*3, 0)
+objp[36] = (spacing*4.5, spacing*0.5 , 0)
+objp[37] = (spacing*4.5, spacing*1.5, 0)
+objp[38] = (spacing*4.5, spacing*2.5, 0)
+objp[39] = (spacing*4.5, spacing*3.5, 0)
+objp[40] = (spacing*5, spacing*0  , 0)
+objp[41] = (spacing*5, spacing*1 , 0)
+objp[42] = (spacing*5, spacing*2, 0)
+objp[43] = (spacing*5, spacing*3, 0)
+#########################################
+
 
 # Arrays to store object points and image points from all the images.
 objpoints = [] # 3d point in real world space
 imgpoints = [] # 2d points in image plane.
 count = 0
 
-while count <25:
+while count <50:
     img = picam2.capture_array()
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -66,7 +112,7 @@ print(tvecs)
 
 
 data = {"camera_matrix": mtx.tolist(), "dist_coeff": dist.tolist(), "width": width, "height":height}
-fname = "cam_cal_"+width+"_"+height+".json"
+fname = "cam_cal_"+str(width)+"_"+str(height)+".json"
 import json
 with open(fname, "w") as f:
     json.dump(data, f)
