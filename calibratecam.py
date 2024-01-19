@@ -10,8 +10,8 @@ from picamera2 import Picamera2
 face_detector = cv2.CascadeClassifier("/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml")
 cv2.startWindowThread()
 
-width = 1920
-height = 1080
+width = 1280
+height = 720
 
 picam2 = Picamera2()
 picam2.configure(picam2.create_preview_configuration(main={"format": 'XRGB8888', "size": (width, height)}))
