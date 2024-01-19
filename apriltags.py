@@ -6,10 +6,12 @@ from time import sleep
 #import apriltag
 from dt_apriltags import Detector
 from picamera2 import Picamera2
+from scipy.spatial.transform import Rotation
 import json
+import can
 
-width = 640
-height = 480
+width = 1920
+height = 1080
 
 # Opening JSON file
 fname = "cam_cal_"+str(width)+"_"+str(height)+".json"
@@ -68,10 +70,6 @@ at_detector = Detector(families='tag36h11',
 print("now get ready, camera is switching on")
 while(1):
     image = picam2.capture_array()
-    h,  w = image.shape[:2]
-    newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
-    # undistort
-    dst = cv2.undistort(image, mtx, dist, None, newcameramtx)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     # define the AprilTags detector options and then detect the AprilTags
@@ -85,8 +83,13 @@ while(1):
     #print(tags)
     print("[INFO] {} total AprilTags detected".format(len(tags)))
 
+    arb_id=0xFFC0
     for tag in tags:
         print(tag)
+        rot = Rotation.from_matrix(tag.pose_R).as_euler(
+                'zyx', degrees=False)
+        print(rot)
+
         for idx in range(len(tag.corners)):
             cv2.line(image, tuple(tag.corners[idx-1, :].astype(int)), tuple(tag.corners[idx, :].astype(int)), (0, 255, 0))
 
@@ -96,12 +99,38 @@ while(1):
                     fontScale=0.8,
                     color=(0, 0, 255))
 
-    # crop the image
-    x, y, w, h = roi
-    dst = dst[y:y+h, x:x+w]
-    cv2.imshow('dst', dst)
+        with can.interface.Bus(channel = 'can0', bustype = 'socketcan') as can0:
+            x_mm = round(tag.pose_t[0, 0] * 25.4)
+            y_mm = round(tag.pose_t[2, 0] * 25.4)
+            yaw_rad = rot[1]
+            yaw_cdeg = round(yaw_rad * 18000 / 3.14159265358)
+            print( 'Type : ', type(yaw_cdeg).__name__)
+            print( 'Type : ', type(abs(yaw_cdeg)).__name__)
+            byte0 = tag.tag_id & 0xFF
+            byte1 = 0 | ((y_mm<0) << 5) | ((x_mm<0) << 6) | ((yaw_cdeg<0) << 7)
+            byte2 = abs(yaw_cdeg) & 0xFF
+            byte3 = (abs(yaw_cdeg) >> 8) & 0xFF
+            byte4 = abs(x_mm) & 0xFF
+            byte5 = (abs(x_mm) >> 8) & 0xFF
+            byte6 = abs(y_mm) & 0xFF
+            byte7 = (abs(y_mm) >> 8) & 0xFF
+            msg = can.Message(is_extended_id=True, arbitration_id = arb_id, data=[byte0, byte1, byte2, byte3, byte4, byte5, byte6, byte7])
+            can0.send(msg)
+        arb_id = arb_id + 1
+
+    if False:
+
+        h,  w = image.shape[:2]
+        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
+        # undistort
+        dst = cv2.undistort(image, mtx, dist, None, newcameramtx)
+        # crop the image
+        x, y, w, h = roi
+        dst = dst[y:y+h, x:x+w]
+        cv2.imshow('dst', dst)
+
     cv2.imshow('img', image)
-    k = cv2.waitKey(30) & 0xff
+    k = cv2.waitKey(1) & 0xff
     if k == 27: # press 'ESC' to quit
         break
 		
